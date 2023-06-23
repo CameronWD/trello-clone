@@ -68,12 +68,21 @@ def seed_db():
     print("Models seeded")
 
 
-@app.route('/cards')
+# @app.route('/cards')
+# def all_cards():
+#   # select * from cards;
+#   stmt = db.select(Card).order_by(Card.status.desc())
+#   cards = db.session.scalars(stmt).all()
+#   return CardSchema(many=True).dump(cards)
+
+@app.cli.command('all_cards')
 def all_cards():
-  # select * from cards;
-  stmt = db.select(Card).order_by(Card.status.desc())
-  cards = db.session.scalars(stmt).all()
-  return CardSchema(many=True).dump(cards)
+   # select * from cards;
+   stmt = db.select(Card).where(db.or_(Card.status != 'Done', Card.id > 2)).order_by(Card.title.desc())
+   # is and by default. Adding the .or_ makes it an or. order by defaults to ascending order. can use a method to change.
+   cards = db.session.scalars(stmt).all()
+   for card in cards:
+      print(card.__dict__)
 
 
 @app.route("/")
