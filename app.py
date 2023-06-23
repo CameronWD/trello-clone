@@ -22,9 +22,8 @@ class Card(db.Model):
     date_created = db.Column(db.Date())
 
 class CardSchema(ma.Schema):
-  class Meta:
-    fields = ('id', 'title', 'description', 'status')
-    ordered = True
+    class Meta:
+        fields = ('id', 'title', 'description', 'status', 'date_created')
 
 @app.cli.command("create")
 def create_db():
@@ -75,20 +74,24 @@ def seed_db():
 #   cards = db.session.scalars(stmt).all()
 #   return CardSchema(many=True).dump(cards)
 
-@app.cli.command('all_cards')
-def all_cards():
-   # select * from cards;
-   stmt = db.select(Card).where(db.or_(Card.status != 'Done', Card.id > 2)).order_by(Card.title.desc())
-   # is and by default. Adding the .or_ makes it an or. order by defaults to ascending order. can use a method to change.
-   cards = db.session.scalars(stmt).all()
-   for card in cards:
-      print(card.__dict__)
-
+# @app.route('/cards')
+# def all_cards():
+#    # select * from cards;
+#    stmt = db.select(Card).where(db.or_(Card.status != 'Done', Card.id > 2)).order_by(Card.title.desc())
+#    # is and by default. Adding the .or_ makes it an or. order by defaults to ascending order. can use a method to change.
+#    cards = db.session.scalars(stmt).all()
+#    for card in cards:
+#       print(card.__dict__)
 
 @app.route("/")
 def index():
     return "Hello World!"
 
+@app.route('/cards')
+def all_cards():
+   stmt = db.select(Card).order_by(Card.status.desc())
+   cards = db.session.scalars(stmt).all()
+   return json.dumps(cards)
 
 if __name__ == "__main__":
     app.run(debug=True)
