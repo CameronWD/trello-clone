@@ -91,7 +91,9 @@ def index():
 def all_cards():
    stmt = db.select(Card).order_by(Card.status.desc())
    cards = db.session.scalars(stmt).all()
-   return json.dumps(cards)
+   return CardSchema(many=True).dump(cards)
+
+#if using .all on cards, need to set cardschema "many=True"
 
 if __name__ == "__main__":
     app.run(debug=True)
