@@ -123,7 +123,7 @@ def index():
 def register():
     try:
         # Parse, sanitize and validate the incoming JSON data via the schema
-        user_info = UserSchema().load(request.json) #used to santize the data thru marshmallow
+        user_info = UserSchema().load(request.json) #used to santize the data thru marshmallow. Loads the data from the request in the model of the Schema.
         # Create a new user model instance with the same schema
         user = User(
             email=user_info['email'],
@@ -137,9 +137,18 @@ def register():
         # print(user.__dict__)
 
         # Return the new user, exclude pw
-        return UserSchema(exclude=['password']).dump(user), 201 #important to return the data that was sent but not sensitive information like pw
+        return UserSchema(exclude=['password']).dump(user), 201 #important to return the data that was sent but not sensitive information like pw. 201 is because its a creation
     except IntegrityError:
         return{'error': 'Email address already in use'}, 409
+
+@app.route('/login', methods=['POST'])
+def login():
+    stmt = db.select(User).filter_by(email=request.json['email']) #cna use a where statment too. .where but uses a == as boolean
+    user = db.session.scalar(stmt) #because scalar is singular, it will only return 1 item/first
+    if user and bcrypt.check_password_hash(user.password, request.json['password']): #works left ot right. if user isnt 'truthy' will go straight to the else 
+        return UserSchema(exclude=['password']).dump(user)
+    else:
+        return {'error': 'Invalid email address or password'}, 401
 
 @app.route('/cards')
 def all_cards():
