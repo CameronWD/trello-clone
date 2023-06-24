@@ -23,7 +23,20 @@ class Card(db.Model):
 
 class CardSchema(ma.Schema):
     class Meta:
-        fields = ('id', 'title', 'description', 'status', 'date_created')
+        fields = ('id', 'title', 'description', 'status')
+
+class User(db.Model):
+    __tablename__ = "users"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String)
+    email = db.Column(db.String, nullable=False, unique=True)
+    password = db.Column(db.String, nullable=False)
+    is_admin = db.Column(db.Boolean, default=False)
+
+class UserSchema(ma.Schema):
+    class Meta:
+        fields = ('name', 'email', 'is_admin')
 
 @app.cli.command("create")
 def create_db():
@@ -34,6 +47,18 @@ def create_db():
 
 @app.cli.command("seed")
 def seed_db():
+    users = [
+        User(
+            email='admin@spam.com',
+            password='spinynorman',
+            is_admin=True
+        ),
+        User(
+            name='John Cleese',
+            email='cleese@spam.com',
+            password='tisbutascratch'
+        )
+    ]
     # Create an instance of the Card model in memory
     cards = [
         Card(
@@ -89,6 +114,7 @@ def index():
 
 @app.route('/cards')
 def all_cards():
+   # select * from cards;
    stmt = db.select(Card).order_by(Card.status.desc())
    cards = db.session.scalars(stmt).all()
    return CardSchema(many=True).dump(cards)
