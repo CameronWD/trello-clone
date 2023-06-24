@@ -83,9 +83,11 @@ def seed_db():
 
     # Truncate the Card table
     db.session.query(Card).delete()
+    db.session.query(User).delete()
 
     # Add the card to the session (transaction)
     db.session.add_all(cards)
+    db.session.add_all(users)
 
     # Commit the transaction to the database
     db.session.commit()
