@@ -1,7 +1,8 @@
-from flask import Flask
+from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from datetime import date
 from flask_marshmallow import Marshmallow
+from flask_bcrypt import Bcrypt
 
 app = Flask(__name__)
 
@@ -11,6 +12,8 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql+psycopg2://trello_dev:spameg
 
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
+bcrypt = Bcrypt(app)
+
 
 class Card(db.Model):
     __tablename__ = "cards"
@@ -36,7 +39,7 @@ class User(db.Model):
 
 class UserSchema(ma.Schema):
     class Meta:
-        fields = ('name', 'email', 'is_admin')
+        fields = ('name', 'email', 'password', 'is_admin')
 
 @app.cli.command("create")
 def create_db():
@@ -48,15 +51,16 @@ def create_db():
 @app.cli.command("seed")
 def seed_db():
     users = [
+        # store user pw as a base 64 string to save space. done using the .decode and specifying what encoding ('utf-8') for example.
         User(
             email='admin@spam.com',
-            password='spinynorman',
+            password=bcrypt.generate_password_hash('spinynorman').decode('utf-8'),
             is_admin=True
         ),
         User(
             name='John Cleese',
             email='cleese@spam.com',
-            password='tisbutascratch'
+            password=bcrypt.generate_password_hash('tisbutascratch').decode('utf-8')
         )
     ]
     # Create an instance of the Card model in memory
@@ -113,6 +117,21 @@ def seed_db():
 @app.route("/")
 def index():
     return "Hello World!"
+
+@app.route("/register", methods=['POST'])
+def register():
+    user_info = UserSchema().load(request.json) #used to santize the data thru marshmallow
+    user = User(
+        email=user_info['email'],
+        password=bcrypt.generate_password_hash(user_info['password']).decode('utf-8'),
+        name=user_info['name']
+    )
+
+    db.session.add(user)
+    db.session.commit() #adding the transient user data to the db
+    # print(user.__dict__)
+
+    return UserSchema(exclude=['password']).dump(user), 201 #important to return the data that was sent but not sensitive information like pw
 
 @app.route('/cards')
 def all_cards():
