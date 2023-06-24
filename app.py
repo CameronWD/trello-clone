@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import date
 from flask_marshmallow import Marshmallow
 from flask_bcrypt import Bcrypt
+from sqlalchemy.exc import IntegrityError
 
 app = Flask(__name__)
 
@@ -120,18 +121,25 @@ def index():
 
 @app.route("/register", methods=['POST'])
 def register():
-    user_info = UserSchema().load(request.json) #used to santize the data thru marshmallow
-    user = User(
-        email=user_info['email'],
-        password=bcrypt.generate_password_hash(user_info['password']).decode('utf-8'),
-        name=user_info['name']
-    )
+    try:
+        # Parse, sanitize and validate the incoming JSON data via the schema
+        user_info = UserSchema().load(request.json) #used to santize the data thru marshmallow
+        # Create a new user model instance with the same schema
+        user = User(
+            email=user_info['email'],
+            password=bcrypt.generate_password_hash(user_info['password']).decode('utf-8'),
+            name=user_info['name']
+        )
 
-    db.session.add(user)
-    db.session.commit() #adding the transient user data to the db
-    # print(user.__dict__)
+        # add and commit the new user
+        db.session.add(user)
+        db.session.commit() #adding the transient user data to the db
+        # print(user.__dict__)
 
-    return UserSchema(exclude=['password']).dump(user), 201 #important to return the data that was sent but not sensitive information like pw
+        # Return the new user, exclude pw
+        return UserSchema(exclude=['password']).dump(user), 201 #important to return the data that was sent but not sensitive information like pw
+    except IntegrityError:
+        return{'error': 'Email address already in use'}, 409
 
 @app.route('/cards')
 def all_cards():
