@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, abort
 from flask_sqlalchemy import SQLAlchemy
 from datetime import date, timedelta
 from flask_marshmallow import Marshmallow
@@ -17,6 +17,16 @@ ma = Marshmallow(app)
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 
+def admin_required():
+    user_email = get_jwt_identity()
+    stmt = db.select(User).filter_by(email=user_email)
+    user = db.session.scalar(stmt)
+    if not (user and user.is_admin):
+        abort(401)
+
+@app.errorhandler(401)
+def unauthorized(err):
+    return{'error': 'You must be an admin'}, 401
 
 class Card(db.Model):
     __tablename__ = "cards"
@@ -159,12 +169,15 @@ def login():
 
 @app.route('/cards')
 @jwt_required()
+#is possible to make own decorator such as 'admin required'
 def all_cards():
-   user_email = get_jwt_identity()
-   stmt = db.select(User).filter_by(email=user_email)
-   user = db.session.scalar(stmt)
-   if not user.is_admin:
-       return {'error': 'You musdt be an admin'}, 401
+   admin_required()
+
+#    user_email = get_jwt_identity()
+#    stmt = db.select(User).filter_by(email=user_email)
+#    user = db.session.scalar(stmt)
+#    if not user.is_admin:
+#        return {'error': 'You musdt be an admin'}, 401
    # above section checks if the user is an admin. gets the token from login, gets the email, checks that against the is admin and if not an admin, returns error.
    # select * from cards;
    stmt = db.select(Card).order_by(Card.status.desc())
