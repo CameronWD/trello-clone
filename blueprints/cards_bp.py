@@ -1,4 +1,4 @@
-from flask import Blueprint, request
+from flask import Blueprint, request, abort
 from flask_jwt_extended import jwt_required
 from models.card import Card, CardSchema
 from init import db
@@ -51,5 +51,28 @@ def create_card():
 
 # Update a card
 @cards_bp.route('/<int:card_id>', methods=['PUT', 'PATCH'])
-def update_card():
+def update_card(card_id):
+   stmt = db.select(Card).filter_by(id=card_id)
+   card = db.session.scalar(stmt)
+   card_info = CardSchema().load(request.json)
+   if card:
+      card.title = card_info.get('title', card.title)
+      card.description = card_info.get('description', card.description)
+      card.status = card_info.get('status', card.status)
+      # the get method lets us provide a default value incase key value not provided
+      db.session.commit()
+      return CardSchema().dump(card)
+   else:
+      return {'error': 'Card not found'}, 404
    
+# Delete a card
+@cards_bp.route('/<int:card_id>', methods=['DELETE'])
+def delete_card(card_id):
+   stmt = db.select(Card).filter_by(id=card_id)
+   card = db.session.scalar(stmt)
+   if card:
+      db.session.delete(card)
+      db.session.commit()
+      return {}, 200
+   else:
+      return{'error': 'Card not found'}, 404
