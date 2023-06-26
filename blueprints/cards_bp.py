@@ -2,9 +2,12 @@ from flask import Blueprint
 from flask_jwt_extended import jwt_required
 from models.card import Card, CardSchema
 from init import db
+from blueprints.auth_bp import admin_required
+
 
 cards_bp = Blueprint('cards', __name__)
-@app.route('/cards')
+
+@cards_bp.route('/cards')
 @jwt_required()
 #is possible to make own decorator such as 'admin required'
 def all_cards():
