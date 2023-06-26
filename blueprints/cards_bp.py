@@ -1,13 +1,15 @@
-from flask import Blueprint
+from flask import Blueprint, request
 from flask_jwt_extended import jwt_required
 from models.card import Card, CardSchema
 from init import db
 from blueprints.auth_bp import admin_required
+from datetime import date
 
 
-cards_bp = Blueprint('cards', __name__)
+cards_bp = Blueprint('cards', __name__, url_prefix='/cards')
 
-@cards_bp.route('/cards')
+# Get all cards
+@cards_bp.route('/')
 @jwt_required()
 def all_cards():
    admin_required()
@@ -17,13 +19,37 @@ def all_cards():
    cards = db.session.scalars(stmt).all()
    return CardSchema(many=True).dump(cards)
 
-@cards_bp.route('/cards/<int:card_id>')
+# Get one card
+@cards_bp.route('/<int:card_id>')
 def one_card(card_id):
-      stmt = db.select(Card).filter_by(id=card_id)
-      card = db.session.scalar(stmt)
-      if card:
-      # if card is truthy aka there is a card. 
-           return CardSchema().dump(card)
-      else:
-           return{'error': 'Card not found'}, 404
+   stmt = db.select(Card).filter_by(id=card_id)
+   card = db.session.scalar(stmt)
+   if card:
+   # if card is truthy aka there is a card. 
+      return CardSchema().dump(card)
+   else:
+      return{'error': 'Card not found'}, 404
+
+# Create a new card
+@cards_bp.route('/', methods=['POST'])
+def create_card():
+     # Load the incoming POST data via the schema 
+     card_info = CardSchema().load(request.json)
+     # Create a new Card instance from the card_info
+     card = Card(
+        title = card_info['title'],
+        description = card_info['description'],
+        status = card_info['status'],
+        date_created = date.today()
+     )
+     # Can store the date using linux epochs 
+     # Add and commit the new card to the session
+     db.session.add(card)
+     db.session.commit()
+     # Send the new card back to the client
+     return CardSchema().dump(card), 201
+
+# Update a card
+@cards_bp.route('/<int:card_id>', methods=['PUT', 'PATCH'])
+def update_card():
    
