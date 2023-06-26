@@ -10,7 +10,10 @@ from dotenv import load_dotenv
 from models.user import User, UserSchema
 from models.card import Card, CardSchema
 from init import db, ma, bcrypt, jwt
-from blueprints.cli_bp import db_commands
+from blueprints.cli_bp import cli_bp
+from blueprints.auth_bp import auth_bp
+from blueprints.cards_bp import cards_bp
+
 
 
 load_dotenv() # will be removed when refactored
@@ -42,7 +45,16 @@ def admin_required():
 def unauthorized(err):
     return{'error': 'You must be an admin'}, 401
 
-app.register_blueprint(db_commands)
+app.register_blueprint(cli_bp)
+
+app.register_blueprint(auth_bp)
+
+app.register_blueprint(cards_bp)
+
+
+@app.route("/")
+def index():
+    return "Hello World!"
 
 # class Card(db.Model):
 #     __tablename__ = "cards"
@@ -143,62 +155,60 @@ app.register_blueprint(db_commands)
 #    for card in cards:
 #       print(card.__dict__)
 
-@app.route("/")
-def index():
-    return "Hello World!"
 
-@app.route("/register", methods=['POST'])
-def register():
-    try:
-        # Parse, sanitize and validate the incoming JSON data via the schema
-        user_info = UserSchema().load(request.json) #used to santize the data thru marshmallow. Loads the data from the request in the model of the Schema.
-        # Create a new user model instance with the same schema
-        user = User(
-            email=user_info['email'],
-            password=bcrypt.generate_password_hash(user_info['password']).decode('utf-8'),
-            name=user_info['name']
-        )
 
-        # add and commit the new user
-        db.session.add(user)
-        db.session.commit() #adding the transient user data to the db
-        # print(user.__dict__)
+# @app.route("/register", methods=['POST'])
+# def register():
+#     try:
+#         # Parse, sanitize and validate the incoming JSON data via the schema
+#         user_info = UserSchema().load(request.json) #used to santize the data thru marshmallow. Loads the data from the request in the model of the Schema.
+#         # Create a new user model instance with the same schema
+#         user = User(
+#             email=user_info['email'],
+#             password=bcrypt.generate_password_hash(user_info['password']).decode('utf-8'),
+#             name=user_info['name']
+#         )
 
-        # Return the new user, exclude pw
-        return UserSchema(exclude=['password']).dump(user), 201 #important to return the data that was sent but not sensitive information like pw. 201 is because its a creation
-    except IntegrityError:
-        return{'error': 'Email address already in use'}, 409
+#         # add and commit the new user
+#         db.session.add(user)
+#         db.session.commit() #adding the transient user data to the db
+#         # print(user.__dict__)
 
-@app.route('/login', methods=['POST'])
-def login():
-    try:
-        stmt = db.select(User).filter_by(email=request.json['email']) #cna use a where statment too. .where but uses a == as boolean
-        user = db.session.scalar(stmt) #because scalar is singular, it will only return 1 item/first
-        if user and bcrypt.check_password_hash(user.password, request.json['password']):
-             #works left ot right. if user isnt 'truthy' will go straight to the else 
-            token = create_access_token(identity=user.email, expires_delta=timedelta(days=1))  #expiry delta for the time the token works for
-            return {'token': token, 'user': UserSchema(exclude=['password']).dump(user)}
-        else:
-            return {'error': 'Invalid email address or password'}, 401
-    except KeyError:
-        return {'error': 'Email and password are required.'}, 400
+#         # Return the new user, exclude pw
+#         return UserSchema(exclude=['password']).dump(user), 201 #important to return the data that was sent but not sensitive information like pw. 201 is because its a creation
+#     except IntegrityError:
+#         return{'error': 'Email address already in use'}, 409
 
-@app.route('/cards')
-@jwt_required()
-#is possible to make own decorator such as 'admin required'
-def all_cards():
-   admin_required()
+# @app.route('/login', methods=['POST'])
+# def login():
+#     try:
+#         stmt = db.select(User).filter_by(email=request.json['email']) #cna use a where statment too. .where but uses a == as boolean
+#         user = db.session.scalar(stmt) #because scalar is singular, it will only return 1 item/first
+#         if user and bcrypt.check_password_hash(user.password, request.json['password']):
+#              #works left ot right. if user isnt 'truthy' will go straight to the else 
+#             token = create_access_token(identity=user.email, expires_delta=timedelta(days=1))  #expiry delta for the time the token works for
+#             return {'token': token, 'user': UserSchema(exclude=['password']).dump(user)}
+#         else:
+#             return {'error': 'Invalid email address or password'}, 401
+#     except KeyError:
+#         return {'error': 'Email and password are required.'}, 400
 
-#    user_email = get_jwt_identity()
-#    stmt = db.select(User).filter_by(email=user_email)
-#    user = db.session.scalar(stmt)
-#    if not user.is_admin:
-#        return {'error': 'You musdt be an admin'}, 401
-   # above section checks if the user is an admin. gets the token from login, gets the email, checks that against the is admin and if not an admin, returns error.
-   # select * from cards;
-   stmt = db.select(Card).order_by(Card.status.desc())
-   cards = db.session.scalars(stmt).all()
-   return CardSchema(many=True).dump(cards)
+# @app.route('/cards')
+# @jwt_required()
+# #is possible to make own decorator such as 'admin required'
+# def all_cards():
+#    admin_required()
+
+# #    user_email = get_jwt_identity()
+# #    stmt = db.select(User).filter_by(email=user_email)
+# #    user = db.session.scalar(stmt)
+# #    if not user.is_admin:
+# #        return {'error': 'You musdt be an admin'}, 401
+#    # above section checks if the user is an admin. gets the token from login, gets the email, checks that against the is admin and if not an admin, returns error.
+#    # select * from cards;
+#    stmt = db.select(Card).order_by(Card.status.desc())
+#    cards = db.session.scalars(stmt).all()
+#    return CardSchema(many=True).dump(cards)
 
 #if using .all on cards, need to set cardschema "many=True"
 
