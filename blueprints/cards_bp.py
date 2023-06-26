@@ -9,17 +9,21 @@ cards_bp = Blueprint('cards', __name__)
 
 @cards_bp.route('/cards')
 @jwt_required()
-#is possible to make own decorator such as 'admin required'
 def all_cards():
    admin_required()
 
-#    user_email = get_jwt_identity()
-#    stmt = db.select(User).filter_by(email=user_email)
-#    user = db.session.scalar(stmt)
-#    if not user.is_admin:
-#        return {'error': 'You musdt be an admin'}, 401
-   # above section checks if the user is an admin. gets the token from login, gets the email, checks that against the is admin and if not an admin, returns error.
    # select * from cards;
    stmt = db.select(Card).order_by(Card.status.desc())
    cards = db.session.scalars(stmt).all()
    return CardSchema(many=True).dump(cards)
+
+@cards_bp.route('/cards/<int:card_id>')
+def one_card(card_id):
+      stmt = db.select(Card).filter_by(id=card_id)
+      card = db.session.scalar(stmt)
+      if card:
+      # if card is truthy aka there is a card. 
+           return CardSchema().dump(card)
+      else:
+           return{'error': 'Card not found'}, 404
+   
