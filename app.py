@@ -1,19 +1,21 @@
 from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
-from datetime import date
+from datetime import date, timedelta
 from flask_marshmallow import Marshmallow
 from flask_bcrypt import Bcrypt
 from sqlalchemy.exc import IntegrityError
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 
 app = Flask(__name__)
 
-app.config['JSON_SORT_KEYS'] = False
+app.config['JWT_SECRET_KEY'] = 'Ministry of Silly Walks'
 
 app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql+psycopg2://trello_dev:spameggs123@localhost:5432/trello"
 
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
 bcrypt = Bcrypt(app)
+jwt = JWTManager(app)
 
 
 class Card(db.Model):
@@ -143,15 +145,27 @@ def register():
 
 @app.route('/login', methods=['POST'])
 def login():
-    stmt = db.select(User).filter_by(email=request.json['email']) #cna use a where statment too. .where but uses a == as boolean
-    user = db.session.scalar(stmt) #because scalar is singular, it will only return 1 item/first
-    if user and bcrypt.check_password_hash(user.password, request.json['password']): #works left ot right. if user isnt 'truthy' will go straight to the else 
-        return UserSchema(exclude=['password']).dump(user)
-    else:
-        return {'error': 'Invalid email address or password'}, 401
+    try:
+        stmt = db.select(User).filter_by(email=request.json['email']) #cna use a where statment too. .where but uses a == as boolean
+        user = db.session.scalar(stmt) #because scalar is singular, it will only return 1 item/first
+        if user and bcrypt.check_password_hash(user.password, request.json['password']):
+             #works left ot right. if user isnt 'truthy' will go straight to the else 
+            token = create_access_token(identity=user.email, expires_delta=timedelta(days=1))  #expiry delta for the time the token works for
+            return {'token': token, 'user': UserSchema(exclude=['password']).dump(user)}
+        else:
+            return {'error': 'Invalid email address or password'}, 401
+    except KeyError:
+        return {'error': 'Email and password are required.'}, 400
 
 @app.route('/cards')
+@jwt_required()
 def all_cards():
+   user_email = get_jwt_identity()
+   stmt = db.select(User).filter_by(email=user_email)
+   user = db.session.scalar(stmt)
+   if not user.is_admin:
+       return {'error': 'You musdt be an admin'}, 401
+   # above section checks if the user is an admin. gets the token from login, gets the email, checks that against the is admin and if not an admin, returns error.
    # select * from cards;
    stmt = db.select(Card).order_by(Card.status.desc())
    cards = db.session.scalars(stmt).all()
