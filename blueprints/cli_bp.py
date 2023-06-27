@@ -3,6 +3,7 @@ from datetime import date
 from init import db, bcrypt
 from models.user import User
 from models.card import Card
+from models.comment import Comment
 
 cli_bp = Blueprint('db', __name__)
 
@@ -61,10 +62,30 @@ def seed_db():
     db.session.add_all(cards)
     db.session.commit()
 
+    comments = [
+        Comment(
+            message='Comment 1',
+            date_created=date.today(),
+            user_id=users[0].id,
+            cards_id=cards[1].id
+        ),
+        Comment(
+            message='Comment 2',
+            date_created=date.today(),
+            user_id=users[1].id,
+            cards_id=cards[1].id
+        ),
+        Comment(
+            message='Comment 3',
+            date_created=date.today(),
+            user_id=users[1].id,
+            cards_id=cards[0].id
+        )
+    ]
 
-    # Add the card to the session (transaction)
-    
-
+    db.session.query(Comment).delete()
+    db.session.add_all(comments)
+    db.session.commit()
 
     # Commit the transaction to the database
     db.session.commit()
