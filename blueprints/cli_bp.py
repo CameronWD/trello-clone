@@ -57,7 +57,6 @@ def seed_db():
         ),
     ]
 
-    # Truncate the Card table
     db.session.query(Card).delete()
     db.session.add_all(cards)
     db.session.commit()

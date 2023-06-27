@@ -1,10 +1,11 @@
 from flask import Flask
 from os import environ
-# from dotenv import load_dotenv
 from init import db, ma, bcrypt, jwt
 from blueprints.cli_bp import cli_bp
 from blueprints.auth_bp import auth_bp
 from blueprints.cards_bp import cards_bp
+from marshmallow.exceptions import ValidationError
+
 
 # load_dotenv() # will be removed when refactored
 #factory object below. When an object is tasked with creating and then building an object before returning it.
@@ -21,7 +22,11 @@ def create_app():
 
     @app.errorhandler(401)
     def unauthorized(err):
-        return{'error': 'You must be an admin'}, 401
+        return{'error': str(err)}, 401
+    
+    @app.errorhandler(ValidationError)
+    def validation_error(err):
+        return {'error': err.__dict__['messages']}, 400
 
     app.register_blueprint(cli_bp)
     app.register_blueprint(auth_bp)

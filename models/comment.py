@@ -15,7 +15,6 @@ class Comment(db.Model):
     card_id = db.Column(db.Integer, db.ForeignKey('cards.id', ondelete='CASCADE'), nullable=False)
     card = db.relationship('Card', back_populates='comments') 
 
-
 class CommentSchema(ma.Schema):
     user = fields.Nested('UserSchema', only=['name', 'email'])
     card = fields.Nested('CardSchema', only=['title', 'description', 'status'])
