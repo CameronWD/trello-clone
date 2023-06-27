@@ -11,8 +11,8 @@ class User(db.Model):
     is_admin = db.Column(db.Boolean, default=False)
 
 #lets us use less requests 
-    cards = db.relationship('Card', back_populates='user')
-    comments = db.relationship('Comment', back_populates='user')
+    cards = db.relationship('Card', back_populates='user', cascade='all, delete')
+    comments = db.relationship('Comment', back_populates='user', cascade='all, delete')
 
 class UserSchema(ma.Schema):
     cards = fields.List(fields.Nested('CardSchema', exclude=['user', 'id']))

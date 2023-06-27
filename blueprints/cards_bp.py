@@ -2,7 +2,7 @@ from flask import Blueprint, request, abort
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models.card import Card, CardSchema
 from init import db
-from blueprints.auth_bp import admin_required
+from blueprints.auth_bp import admin_required, admin_or_owner_required
 from datetime import date
 
 
@@ -59,11 +59,11 @@ def create_card():
 @cards_bp.route('/<int:card_id>', methods=['PUT', 'PATCH'])
 @jwt_required()
 def update_card(card_id):
-   admin_required()
    stmt = db.select(Card).filter_by(id=card_id)
    card = db.session.scalar(stmt)
    card_info = CardSchema().load(request.json)
    if card:
+      admin_or_owner_required(card.user.id)
       card.title = card_info.get('title', card.title)
       card.description = card_info.get('description', card.description)
       card.status = card_info.get('status', card.status)
@@ -77,10 +77,10 @@ def update_card(card_id):
 @cards_bp.route('/<int:card_id>', methods=['DELETE'])
 @jwt_required()
 def delete_card(card_id):
-   admin_required()
    stmt = db.select(Card).filter_by(id=card_id)
    card = db.session.scalar(stmt)
    if card:
+      admin_or_owner_required(card.user.id)
       db.session.delete(card)
       db.session.commit()
       return {}, 200

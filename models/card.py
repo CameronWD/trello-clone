@@ -11,15 +11,15 @@ class Card(db.Model):
     status = db.Column(db.String(30))
     date_created = db.Column(db.Date())
 
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     user = db.relationship('User', back_populates='cards') 
-    comments = db.relationship('Comment', back_populates='card')
+    comments = db.relationship('Comment', back_populates='card', cascade='all, delete')
 
     #connects models so can grab info from requests
 
 class CardSchema(ma.Schema):
     # Tell Marhsmallow to use UserSchema to serialze the 'user' field
-    user = fields.Nested('UserSchema', exclude=['password', 'cards'])
+    user = fields.Nested('UserSchema', exclude=['password', 'cards', 'comments'])
     comments = fields.List(fields.Nested('CommentSchema', exclude=['card', 'id']))
     class Meta:
         fields = ('id', 'title', 'description', 'status', 'user', 'comments')
