@@ -1,5 +1,5 @@
 from flask import Blueprint, request, abort
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from models.card import Card, CardSchema
 from init import db
 from blueprints.auth_bp import admin_required
@@ -36,7 +36,9 @@ def one_card(card_id):
 @jwt_required()
 def create_card():
      # Load the incoming POST data via the schema
-     # Should be in a try except incase wrong info is provided 
+     # Should be in a try except incase wrong info is provided
+     # Technically should get JWT identity first and CHECK user exissts before creating card.
+     # In the case that an admin  has deleted the user while they are logged in.  
      card_info = CardSchema().load(request.json)
      # Create a new Card instance from the card_info
      card = Card(
@@ -44,7 +46,7 @@ def create_card():
         description = card_info['description'],
         status = card_info['status'],
         date_created = date.today(),
-        user_id = card_info['user_id']
+        user_id = get_jwt_identity()
      )
      # Can store the date using linux epochs 
      # Add and commit the new card to the session

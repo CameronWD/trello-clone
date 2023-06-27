@@ -1,4 +1,5 @@
 from init import db, ma
+from marshmallow import fields
 
 class Card(db.Model):
     __tablename__ = 'cards'
@@ -16,6 +17,8 @@ class Card(db.Model):
     #connects models so can grab info from requests
 
 class CardSchema(ma.Schema):
+    # Tell Marhsmallow to use UserSchema to serialze the 'user' field
+    user = fields.Nested('UserSchema', exclude=['password', 'cards'])
     class Meta:
         fields = ('id', 'title', 'description', 'status', 'user')
         orderd = True
