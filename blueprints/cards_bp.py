@@ -35,14 +35,16 @@ def one_card(card_id):
 @cards_bp.route('/', methods=['POST'])
 @jwt_required()
 def create_card():
-     # Load the incoming POST data via the schema 
+     # Load the incoming POST data via the schema
+     # Should be in a try except incase wrong info is provided 
      card_info = CardSchema().load(request.json)
      # Create a new Card instance from the card_info
      card = Card(
         title = card_info['title'],
         description = card_info['description'],
         status = card_info['status'],
-        date_created = date.today()
+        date_created = date.today(),
+        user_id = card_info['user_id']
      )
      # Can store the date using linux epochs 
      # Add and commit the new card to the session
