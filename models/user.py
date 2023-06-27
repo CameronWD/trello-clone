@@ -16,6 +16,6 @@ class User(db.Model):
 
 class UserSchema(ma.Schema):
     cards = fields.List(fields.Nested('CardSchema', exclude=['user', 'id']))
-    comments = fields.List(fields.Nested('Comments', exclude=['user', 'id']))
+    comments = fields.List(fields.Nested('CommentSchema', exclude=['user', 'id']))
     class Meta:
         fields = ('name', 'email', 'password', 'is_admin', 'cards', 'comments')

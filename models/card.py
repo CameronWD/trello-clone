@@ -20,7 +20,7 @@ class Card(db.Model):
 class CardSchema(ma.Schema):
     # Tell Marhsmallow to use UserSchema to serialze the 'user' field
     user = fields.Nested('UserSchema', exclude=['password', 'cards'])
-    comments = fields.List(fields.Nested('Comments', exclude=['card', 'id']))
+    comments = fields.List(fields.Nested('CommentSchema', exclude=['card', 'id']))
     class Meta:
         fields = ('id', 'title', 'description', 'status', 'user', 'comments')
         orderd = True

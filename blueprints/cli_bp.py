@@ -67,19 +67,19 @@ def seed_db():
             message='Comment 1',
             date_created=date.today(),
             user_id=users[0].id,
-            cards_id=cards[1].id
+            card_id=cards[1].id
         ),
         Comment(
             message='Comment 2',
             date_created=date.today(),
             user_id=users[1].id,
-            cards_id=cards[1].id
+            card_id=cards[1].id
         ),
         Comment(
             message='Comment 3',
             date_created=date.today(),
             user_id=users[1].id,
-            cards_id=cards[0].id
+            card_id=cards[0].id
         )
     ]
 
